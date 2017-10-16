@@ -158,6 +158,19 @@ void verbs_init_cq(struct ibv_cq *cq, struct ibv_context *context,
 	pthread_cond_init(&cq->cond, NULL);
 }
 
+int verbs_get_action_xfrm_size(const struct ibv_action_xfrm_attr *attr,
+			       size_t *cmd, size_t *resp)
+{
+	switch (attr->type) {
+	case IBV_ACTION_XFRM_TYPE_ESP_AES_GCM:
+		*cmd = sizeof(struct ibv_action_xfrm_esp_aes_gcm);
+		*resp = 0;
+		return 0;
+	default:
+		return -EOPNOTSUPP;
+	}
+}
+
 static struct ibv_cq_ex *
 __lib_ibv_create_cq_ex(struct ibv_context *context,
 		       struct ibv_cq_init_attr_ex *cq_attr)

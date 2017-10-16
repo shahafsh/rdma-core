@@ -223,6 +223,8 @@ struct _ibv_action_xfrm {
 void verbs_init_cq(struct ibv_cq *cq, struct ibv_context *context,
 		       struct ibv_comp_channel *channel,
 		       void *cq_context);
+int verbs_get_action_xfrm_size(const struct ibv_action_xfrm_attr *attr,
+			       size_t *cmd, size_t *resp);
 
 int ibv_cmd_get_context(struct ibv_context *context, struct ibv_get_context *cmd,
 			size_t cmd_size, struct ibv_get_context_resp *resp,

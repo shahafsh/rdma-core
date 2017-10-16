@@ -1394,6 +1394,45 @@ struct ibv_flow {
 	uint32_t	   handle;
 };
 
+enum ibv_action_xfrm_type {
+	IBV_ACTION_XFRM_TYPE_UNSPECIFIED,
+	IBV_ACTION_XFRM_TYPE_ESP_AES_GCM = 1,
+};
+
+struct ibv_action_xfrm_attr {
+	enum ibv_action_xfrm_type	type;
+};
+
+enum ibv_action_xfrm_esp_aes_gcm_attr_mask {
+	IBV_ACTION_XFRM_ESP_AES_GCM_ATTR_MASK_RESERVED	= 1 << 0,
+};
+
+enum ibv_action_xfrm_esp_aes_gcm_flags {
+	IBV_ACTION_XFRM_ESP_AES_GCM_FLAG_ESN = 0x1,
+};
+
+struct ibv_action_xfrm_attr_esp_aes_gcm {
+	union {
+		struct ibv_action_xfrm_attr	base;
+		enum ibv_action_xfrm_type	type;
+	};
+	uint32_t			comp_mask;
+	uint32_t			key_length;
+	uint8_t				key[32];
+	uint8_t				salt[4];
+	uint8_t				seqiv[8];
+	uint8_t				esn[4];
+	uint32_t			flags; /* Use enum ib_ipsec_flags */
+};
+
+/* Internal data for ibv_action_xfrm */
+struct _ibv_action_xfrm;
+
+struct ibv_action_xfrm {
+	struct ibv_context *context;
+	/* Internal fields are coming afterwards */
+};
+
 struct ibv_device;
 struct ibv_context;
 
@@ -1546,6 +1585,9 @@ enum verbs_context_mask {
 
 struct verbs_context {
 	/*  "grows up" - new fields go here */
+	int (*destroy_action_xfrm)(struct _ibv_action_xfrm *action);
+	struct _ibv_action_xfrm *(*create_action_xfrm)(struct ibv_context *context,
+						       const struct ibv_action_xfrm_attr *attr);
 	int (*destroy_rwq_ind_table)(struct ibv_rwq_ind_table *rwq_ind_table);
 	struct ibv_rwq_ind_table *(*create_rwq_ind_table)(struct ibv_context *context,
 							  struct ibv_rwq_ind_table_init_attr *init_attr);
@@ -1728,6 +1770,31 @@ static inline int ibv_destroy_flow(struct ibv_flow *flow_id)
 	if (!vctx || !vctx->ibv_destroy_flow)
 		return -ENOSYS;
 	return vctx->ibv_destroy_flow(flow_id);
+}
+
+static inline struct ibv_action_xfrm *ibv_create_action_xfrm_esp_aes_gcm(struct ibv_context *ctx,
+									 const struct ibv_action_xfrm_attr_esp_aes_gcm *attr)
+{
+	struct verbs_context *vctx = verbs_get_ctx_op(ctx,
+						      create_action_xfrm);
+
+	if (!vctx) {
+		errno = ENOSYS;
+		return NULL;
+	}
+
+	return (struct ibv_action_xfrm *)vctx->create_action_xfrm(ctx, &attr->base);
+}
+
+static inline int ibv_destroy_action_xfrm(struct ibv_action_xfrm *action)
+{
+	struct verbs_context *vctx = verbs_get_ctx_op(action->context,
+						      destroy_action_xfrm);
+
+	if (!vctx)
+		return -ENOSYS;
+
+	return vctx->destroy_action_xfrm((struct _ibv_action_xfrm *)action);
 }
 
 /**

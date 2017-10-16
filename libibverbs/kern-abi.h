@@ -124,6 +124,8 @@ enum {
 	IB_USER_VERBS_CMD_DESTROY_WQ,
 	IB_USER_VERBS_CMD_CREATE_RWQ_IND_TBL,
 	IB_USER_VERBS_CMD_DESTROY_RWQ_IND_TBL,
+	IB_USER_VERBS_CMD_CREATE_ACTION_XFRM = IB_USER_VERBS_CMD_DESTROY_RWQ_IND_TBL + 2,
+	IB_USER_VERBS_CMD_DESTROY_ACTION_XFRM,
 };
 
 /*
@@ -926,6 +928,14 @@ struct ibv_kern_spec_action_tag {
 	__u32 reserved1;
 };
 
+struct ib_uverbs_flow_spec_action_xfrm {
+	__u32  type;
+	__u16  size;
+	__u16 reserved;
+	__u32 handle;
+	__u32 reserved1;
+};
+
 struct ibv_kern_tunnel_filter {
 	__u32 tunnel_id;
 };
@@ -1092,6 +1102,43 @@ struct ibv_detach_mcast {
 	__u64 driver_data[0];
 };
 
+enum {
+	IB_UVERBS_CREATE_ACTION_XFRM_UNSPECIFIED,
+	IB_UVERBS_CREATE_ACTION_XFRM_ESP_AES_GCM = 1,
+};
+
+/* Should be always aligned to 8! */
+struct ibv_action_xfrm_esp_aes_gcm {
+	__u32				comp_mask;
+	__u32			        key_length;
+	__u8			        key[32];
+	__u8			        salt[4];
+	__u8			        seqiv[8];
+	__u8				esn[4];
+	__u32				flags; /* Use enum ib_ipsec_flags */
+	__u32				reserved;
+};
+
+struct ibv_create_action_xfrm {
+	struct ex_hdr	hdr;
+	__u32		action_id;
+	__u32		reserved;
+	/* Following are the action parameters
+	 * struct ibv_action_xfrm_xxxx;
+	 */
+};
+
+struct ibv_create_action_xfrm_resp {
+	__u32		response_length;
+	__u32		action_handle;
+};
+
+struct ibv_destroy_action_xfrm {
+	struct ex_hdr	hdr;
+	__u32		comp_mask;
+	__u32		action_handle;
+};
+
 struct ibv_create_srq {
 	__u32 command;
 	__u16 in_words;
@@ -1234,6 +1281,8 @@ enum {
 	IB_USER_VERBS_CMD_CREATE_RWQ_IND_TBL_V2 = -1,
 	IB_USER_VERBS_CMD_DESTROY_RWQ_IND_TBL_V2 = -1,
 	IB_USER_VERBS_CMD_MODIFY_QP_EX_V2 = -1,
+	IB_USER_VERBS_CMD_CREATE_ACTION_XFRM_V2 = -1,
+	IB_USER_VERBS_CMD_DESTROY_ACTION_XFRM_V2 = -1,
 };
 
 struct ibv_modify_srq_v3 {

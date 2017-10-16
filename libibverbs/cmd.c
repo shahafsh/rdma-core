@@ -1909,6 +1909,100 @@ int ibv_cmd_destroy_flow(struct ibv_flow *flow_id)
 	return ret;
 }
 
+#define ALIGN_8(num)	(((num) + 7) & ~0x3)
+
+static int copy_action_xfrm(enum ibv_action_xfrm_type type,
+			    const struct ibv_action_xfrm_attr *attr,
+			    size_t cmd_core_size,
+			    size_t cmd_common_size,
+			    void **start_cmd)
+{
+	void *pcmd;
+	size_t written_size = cmd_common_size;
+
+	switch (type) {
+	case IBV_ACTION_XFRM_TYPE_ESP_AES_GCM: {
+		const struct ibv_action_xfrm_attr_esp_aes_gcm *esp_attr =
+			(const struct ibv_action_xfrm_attr_esp_aes_gcm *)attr;
+		size_t size = min(sizeof(*esp_attr) -
+				  offsetof(struct ibv_action_xfrm_attr_esp_aes_gcm, comp_mask),
+				  cmd_core_size - cmd_common_size);
+		pcmd = ((void *)*start_cmd + cmd_core_size - cmd_common_size - ALIGN_8(size));
+		if (esp_attr->comp_mask >= IBV_ACTION_XFRM_ESP_AES_GCM_ATTR_MASK_RESERVED)
+			return -EOPNOTSUPP;
+
+		memcpy(pcmd + cmd_common_size, &esp_attr->comp_mask, size);
+		((struct ibv_action_xfrm_esp_aes_gcm *)(pcmd + cmd_common_size))->reserved = 0;
+
+		written_size += min(ALIGN_8(size),
+				    cmd_core_size - cmd_common_size);
+		break;
+	}
+	default:
+		return -EOPNOTSUPP;
+	}
+
+	*start_cmd = pcmd;
+	return written_size;
+}
+
+int ibv_cmd_create_action_xfrm(struct ibv_context *ctx,
+			       const struct ibv_action_xfrm_attr *attr,
+			       struct _ibv_action_xfrm *action_xfrm,
+			       struct ibv_create_action_xfrm *cmd,
+			       size_t cmd_core_size,
+			       size_t cmd_size,
+			       struct ibv_create_action_xfrm_resp *resp,
+			       size_t resp_core_size,
+			       size_t resp_size)
+{
+	int err;
+	int written_size;
+	struct ibv_create_action_xfrm *pcmd = cmd;
+
+	if (cmd_core_size < sizeof(struct ibv_create_action_xfrm))
+		return -EINVAL;
+
+	written_size = copy_action_xfrm(attr->type, attr, cmd_core_size,
+					sizeof(*cmd), (void **)&pcmd);
+	if (written_size < 0)
+		return written_size;
+
+	action_xfrm->comp_mask = 0;
+	pcmd->action_id = attr->type;
+	IBV_INIT_CMD_RESP_EX_V(pcmd, written_size,
+			       written_size + cmd_size - cmd_core_size,
+			       CREATE_ACTION_XFRM, resp,
+			       resp_core_size, resp_size);
+
+	written_size += cmd_size - cmd_core_size;
+	err = write(ctx->cmd_fd, pcmd, written_size);
+	if (err != written_size)
+		return errno;
+
+	(void)VALGRIND_MAKE_MEM_DEFINED(resp, resp_size);
+
+	action_xfrm->base.context = ctx;
+	action_xfrm->handle = resp->action_handle;
+	action_xfrm->type = attr->type;
+
+	return 0;
+}
+
+int ibv_cmd_destroy_action_xfrm(struct _ibv_action_xfrm *action)
+{
+	struct ibv_destroy_action_xfrm cmd = {};
+	int ret = 0;
+
+	IBV_INIT_CMD_EX(&cmd, sizeof(cmd), DESTROY_ACTION_XFRM);
+	cmd.action_handle = action->handle;
+
+	if (write(action->base.context->cmd_fd, &cmd, sizeof(cmd)) != sizeof(cmd))
+		ret = errno;
+
+	return ret;
+}
+
 int ibv_cmd_create_wq(struct ibv_context *context,
 		      struct ibv_wq_init_attr *wq_init_attr,
 		      struct ibv_wq *wq,

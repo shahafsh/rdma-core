@@ -213,6 +213,13 @@ void verbs_register_driver(const struct verbs_device_ops *ops);
 		verbs_register_driver(&drv);                                   \
 	}
 
+struct _ibv_action_xfrm {
+	struct ibv_action_xfrm		base;
+	uint32_t			handle;
+	enum ibv_action_xfrm_type	type;
+	uint32_t			comp_mask;
+};
+
 void verbs_init_cq(struct ibv_cq *cq, struct ibv_context *context,
 		       struct ibv_comp_channel *channel,
 		       void *cq_context);
@@ -358,6 +365,15 @@ int ibv_cmd_detach_mcast(struct ibv_qp *qp, const union ibv_gid *gid, uint16_t l
 struct ibv_flow *ibv_cmd_create_flow(struct ibv_qp *qp,
 				     struct ibv_flow_attr *flow_attr);
 int ibv_cmd_destroy_flow(struct ibv_flow *flow_id);
+int ibv_cmd_create_action_xfrm(struct ibv_context *ctx,
+			       const struct ibv_action_xfrm_attr *attr,
+			       struct _ibv_action_xfrm *action_xfrm,
+			       struct ibv_create_action_xfrm *cmd,
+			       size_t cmd_core_size,
+			       size_t cmd_size,
+			       struct ibv_create_action_xfrm_resp *resp,
+			       size_t resp_core_size,
+			       size_t resp_size);
 int ibv_cmd_create_wq(struct ibv_context *context,
 		      struct ibv_wq_init_attr *wq_init_attr,
 		      struct ibv_wq *wq,
@@ -368,6 +384,7 @@ int ibv_cmd_create_wq(struct ibv_context *context,
 		      size_t resp_core_size,
 		      size_t resp_size);
 
+int ibv_cmd_destroy_action_xfrm(struct _ibv_action_xfrm *action);
 int ibv_cmd_modify_wq(struct ibv_wq *wq, struct ibv_wq_attr *attr,
 		      struct ibv_modify_wq *cmd, size_t cmd_core_size,
 		      size_t cmd_size);

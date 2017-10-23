@@ -1830,6 +1830,11 @@ static int ib_spec_to_kern_spec(struct ibv_flow_spec *ib_spec,
 	case IBV_FLOW_SPEC_ACTION_DROP:
 		kern_spec->drop.size = sizeof(struct ibv_kern_spec_action_drop);
 		break;
+	case IBV_FLOW_SPEC_ACTION_XFRM:
+		kern_spec->xfrm.size = sizeof(struct ibv_kern_spec_action_xfrm);
+		kern_spec->xfrm.handle =
+			((const struct _ibv_action_xfrm *)ib_spec->xfrm.action)->handle;
+		break;
 	default:
 		return EINVAL;
 	}

@@ -2248,3 +2248,40 @@ int mlx5_destroy_rwq_ind_table(struct ibv_rwq_ind_table *rwq_ind_table)
 	free(rwq_ind_table);
 	return 0;
 }
+
+struct _ibv_action_xfrm *mlx5_create_action_xfrm(struct ibv_context *ctx,
+						 const struct ibv_action_xfrm_attr *attr)
+{
+	void *cmd;
+	void *resp;
+	size_t cmd_sz;
+	size_t resp_sz;
+	struct _ibv_action_xfrm *action;
+	int ret = verbs_get_action_xfrm_size(attr, &cmd_sz, &resp_sz);
+
+	if (ret) {
+		errno = ret;
+		return NULL;
+	}
+
+	cmd_sz += sizeof(struct ibv_create_action_xfrm);
+	resp_sz += sizeof(struct ibv_create_action_xfrm_resp);
+	action = calloc(1, sizeof(*action));
+	if (!action) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	cmd = alloca(cmd_sz);
+	resp = alloca(resp_sz);
+
+	ret = ibv_cmd_create_action_xfrm(ctx, attr, action, cmd, cmd_sz,
+					 cmd_sz, resp, resp_sz, resp_sz);
+	if (ret) {
+		errno = ret;
+		free(action);
+		return NULL;
+	}
+
+	return action;
+}

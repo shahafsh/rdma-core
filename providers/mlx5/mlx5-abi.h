@@ -291,4 +291,14 @@ struct mlx5_query_device_ex_resp {
 	__u32				reserved;
 };
 
+struct mlx5_create_action_xfrm {
+	__u32			comp_mask;
+	__u32			xfrm_flags;
+};
+
+struct mlx5_create_action_xfrm_resp {
+	__u32			response_length;
+	__u32			reserved;
+};
+
 #endif /* MLX5_ABI_H */

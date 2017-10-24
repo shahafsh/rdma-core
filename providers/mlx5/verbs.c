@@ -529,6 +529,46 @@ struct ibv_cq_ex *mlx5dv_create_cq(struct ibv_context *context,
 	return cq;
 }
 
+struct ibv_action_xfrm *mlx5dv_create_action_xfrm_esp_aes_gcm(struct ibv_context *ctx,
+							      const struct ibv_action_xfrm_attr_esp_aes_gcm *attr,
+							      struct mlx5dv_action_xfrm_attr_esp_aes_gcm *mlx5_attr)
+{
+	struct {
+		struct ibv_create_action_xfrm			hdr;
+		struct ibv_action_xfrm_esp_aes_gcm		esp_aes_gcm;
+		struct mlx5_create_action_xfrm			mlx5;
+	} cmd = {};
+	struct {
+		struct ibv_create_action_xfrm_resp		common;
+		struct mlx5_create_action_xfrm_resp		mlx5;
+	} resp = {};
+	struct _ibv_action_xfrm *action;
+	int ret;
+
+	action = calloc(1, sizeof(*action));
+	if (!action) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	if (mlx5_attr->comp_mask & MLX5DV_ACTION_XFRM_ATTR_ESP_AES_GCM_MASK_XFRM_FLAGS)
+		cmd.mlx5.xfrm_flags = mlx5_attr->xfrm_flags;
+
+	ret = ibv_cmd_create_action_xfrm(ctx, &attr->base, action, &cmd.hdr,
+					 sizeof(cmd.hdr) +
+					 sizeof(cmd.esp_aes_gcm),
+					 sizeof(cmd), &resp.common,
+					 sizeof(resp.common),
+					 sizeof(resp.mlx5));
+	if (ret) {
+		errno = ret;
+		free(action);
+		return NULL;
+	}
+
+	return &action->base;
+}
+
 int mlx5_resize_cq(struct ibv_cq *ibcq, int cqe)
 {
 	struct mlx5_cq *cq = to_mcq(ibcq);

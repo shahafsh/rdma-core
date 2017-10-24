@@ -99,6 +99,26 @@ struct mlx5dv_cq_init_attr {
 struct ibv_cq_ex *mlx5dv_create_cq(struct ibv_context *context,
 				   struct ibv_cq_init_attr_ex *cq_attr,
 				   struct mlx5dv_cq_init_attr *mlx5_cq_attr);
+
+enum mlx5dv_action_xfrm_attr_esp_aes_gcm_mask {
+	MLX5DV_ACTION_XFRM_ATTR_ESP_AES_GCM_MASK_XFRM_FLAGS	= 1 << 0,
+	MLX5DV_ACTION_XFRM_ATTR_ESP_AES_GCM_MASK_RESERVED	= 1 << 1,
+};
+
+enum mlx5dv_action_xfrm_flags {
+	MLX5DV_ACTION_XFRM_FLAGS_REQUIRE_METADATA	= 1 << 0,
+	MLX5DV_ACTION_XFRM_FLAGS_RESERVED		= 1 << 1,
+};
+
+struct mlx5dv_action_xfrm_attr_esp_aes_gcm {
+	uint64_t comp_mask;  /* Use enum mlx5dv_action_xfrm_attr_esp_aes_gcm_mask */
+	uint32_t xfrm_flags; /* Use enum mlx5dv_action_xfrm_flags */
+};
+
+struct ibv_action_xfrm *mlx5dv_create_action_xfrm_esp_aes_gcm(struct ibv_context *context,
+							      const struct ibv_action_xfrm_attr_esp_aes_gcm *attr,
+							      struct mlx5dv_action_xfrm_attr_esp_aes_gcm *mlx5_attr);
+
 /*
  * Most device capabilities are exported by ibv_query_device(...),
  * but there is HW device-specific information which is important

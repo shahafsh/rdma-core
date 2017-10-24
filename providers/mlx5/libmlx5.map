@@ -16,4 +16,5 @@ MLX5_1.2 {
 	global:
 		mlx5dv_init_obj;
 		mlx5dv_set_context_attr;
+		mlx5dv_create_action_xfrm_esp_aes_gcm;
 } MLX5_1.1;

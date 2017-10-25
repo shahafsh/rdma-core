@@ -907,6 +907,19 @@ struct ibv_kern_spec_ipv6 {
 	struct ibv_kern_ipv6_filter mask;
 };
 
+struct ibv_kern_esp_filter {
+	__u32 spi;
+	__u32 seq;
+};
+
+struct ibv_kern_spec_esp {
+	__u32 type;
+	__u16 size;
+	__u16 reserved;
+	struct ibv_kern_esp_filter val;
+	struct ibv_kern_esp_filter mask;
+};
+
 struct ibv_kern_tcp_udp_filter {
 	__u16 dst_port;
 	__u16 src_port;
@@ -972,6 +985,7 @@ struct ibv_kern_spec {
 		struct ibv_kern_spec_eth eth;
 		struct ibv_kern_spec_ipv4 ipv4;
 		struct ibv_kern_spec_ipv4_ext ipv4_ext;
+		struct ibv_kern_spec_esp esp;
 		struct ibv_kern_spec_tcp_udp tcp_udp;
 		struct ibv_kern_spec_ipv6 ipv6;
 		struct ibv_kern_spec_tunnel tunnel;

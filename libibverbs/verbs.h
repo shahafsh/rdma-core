@@ -1436,12 +1436,26 @@ enum ibv_action_xfrm_esp_aes_gcm_flags {
 	IBV_ACTION_XFRM_ESP_AES_GCM_FLAG_ESN = 0x1,
 };
 
+enum {
+	IBV_ACTION_XFRM_ESP_AES_GCM_ATTR_KEY		= 1UL << 0,
+	IBV_ACTION_XFRM_ESP_AES_GCM_ATTR_SALT		= 1UL << 1,
+	IBV_ACTION_XFRM_ESP_AES_GCM_ATTR_SEQIV		= 1UL << 2,
+	IBV_ACTION_XFRM_ESP_AES_GCM_ATTR_ESN		= 1UL << 3,
+	IBV_ACTION_XFRM_ESP_AES_GCM_ATTR_FLAGS		= 1UL << 4,
+	IBV_ACTION_XFRM_ESP_AES_GCM_ATTR_RESERVED	= 1UL << 5,
+};
+
 struct ibv_action_xfrm_attr_esp_aes_gcm {
 	union {
 		struct ibv_action_xfrm_attr	base;
 		enum ibv_action_xfrm_type	type;
 	};
-	uint32_t			comp_mask;
+	union {
+		/* In create command, used as comp_mask */
+		uint32_t			comp_mask;
+		/* In modify command, indicates which fields are we changing */
+		uint32_t			attr_mask;
+	};
 	uint32_t			key_length;
 	uint8_t				key[32];
 	uint8_t				salt[4];
@@ -1610,6 +1624,8 @@ enum verbs_context_mask {
 
 struct verbs_context {
 	/*  "grows up" - new fields go here */
+	int (*modify_action_xfrm)(struct _ibv_action_xfrm *action,
+				  const struct ibv_action_xfrm_attr *attr);
 	int (*destroy_action_xfrm)(struct _ibv_action_xfrm *action);
 	struct _ibv_action_xfrm *(*create_action_xfrm)(struct ibv_context *context,
 						       const struct ibv_action_xfrm_attr *attr);
@@ -1809,6 +1825,18 @@ static inline struct ibv_action_xfrm *ibv_create_action_xfrm_esp_aes_gcm(struct 
 	}
 
 	return (struct ibv_action_xfrm *)vctx->create_action_xfrm(ctx, &attr->base);
+}
+
+static inline int ibv_modify_action_xfrm_esp_aes_gcm(struct ibv_action_xfrm *action,
+						     const struct ibv_action_xfrm_attr_esp_aes_gcm *attr)
+{
+	struct verbs_context *vctx = verbs_get_ctx_op(action->context,
+						      modify_action_xfrm);
+
+	if (!vctx)
+		return -ENOSYS;
+
+	return vctx->modify_action_xfrm((struct _ibv_action_xfrm *)action, &attr->base);
 }
 
 static inline int ibv_destroy_action_xfrm(struct ibv_action_xfrm *action)

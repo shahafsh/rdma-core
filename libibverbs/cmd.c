@@ -1928,7 +1928,8 @@ static int copy_action_xfrm(enum ibv_action_xfrm_type type,
 			    const struct ibv_action_xfrm_attr *attr,
 			    size_t cmd_core_size,
 			    size_t cmd_common_size,
-			    void **start_cmd)
+			    void **start_cmd,
+			    bool is_modify)
 {
 	void *pcmd;
 	size_t written_size = cmd_common_size;
@@ -1941,7 +1942,12 @@ static int copy_action_xfrm(enum ibv_action_xfrm_type type,
 				  offsetof(struct ibv_action_xfrm_attr_esp_aes_gcm, comp_mask),
 				  cmd_core_size - cmd_common_size);
 		pcmd = ((void *)*start_cmd + cmd_core_size - cmd_common_size - ALIGN_8(size));
-		if (esp_attr->comp_mask >= IBV_ACTION_XFRM_ESP_AES_GCM_ATTR_MASK_RESERVED)
+		if (!is_modify &&
+		    esp_attr->comp_mask >= IBV_ACTION_XFRM_ESP_AES_GCM_ATTR_MASK_RESERVED)
+			return -EOPNOTSUPP;
+
+		if (is_modify &&
+		    esp_attr->attr_mask >= IBV_ACTION_XFRM_ESP_AES_GCM_ATTR_RESERVED)
 			return -EOPNOTSUPP;
 
 		memcpy(pcmd + cmd_common_size, &esp_attr->comp_mask, size);
@@ -1977,7 +1983,7 @@ int ibv_cmd_create_action_xfrm(struct ibv_context *ctx,
 		return -EINVAL;
 
 	written_size = copy_action_xfrm(attr->type, attr, cmd_core_size,
-					sizeof(*cmd), (void **)&pcmd);
+					sizeof(*cmd), (void **)&pcmd, false);
 	if (written_size < 0)
 		return written_size;
 
@@ -1998,6 +2004,44 @@ int ibv_cmd_create_action_xfrm(struct ibv_context *ctx,
 	action_xfrm->base.context = ctx;
 	action_xfrm->handle = resp->action_handle;
 	action_xfrm->type = attr->type;
+
+	return 0;
+}
+
+int ibv_cmd_modify_action_xfrm(struct _ibv_action_xfrm *action_xfrm,
+			       const struct ibv_action_xfrm_attr *attr,
+			       struct ibv_modify_action_xfrm *cmd,
+			       size_t cmd_core_size,
+			       size_t cmd_size,
+			       struct ibv_modify_action_xfrm_resp *resp,
+			       size_t resp_core_size,
+			       size_t resp_size)
+{
+	int err;
+	int written_size;
+	struct ibv_modify_action_xfrm *pcmd = cmd;
+	struct ibv_context *ctx = action_xfrm->base.context;
+
+	if (cmd_core_size < sizeof(struct ibv_create_action_xfrm))
+		return -EINVAL;
+
+	written_size = copy_action_xfrm(attr->type, attr, cmd_core_size,
+					sizeof(*cmd), (void **)&pcmd, true);
+	if (written_size < 0)
+		return written_size;
+
+	pcmd->action_handle = action_xfrm->handle;
+	IBV_INIT_CMD_RESP_EX_V(pcmd, written_size,
+			       written_size + cmd_size - cmd_core_size,
+			       CREATE_ACTION_XFRM, resp,
+			       resp_core_size, resp_size);
+
+	written_size += cmd_size - cmd_core_size;
+	err = write(ctx->cmd_fd, pcmd, written_size);
+	if (err != written_size)
+		return errno;
+
+	(void)VALGRIND_MAKE_MEM_DEFINED(resp, resp_size);
 
 	return 0;
 }

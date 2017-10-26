@@ -105,6 +105,7 @@ IBVERBS_PRIVATE_@IBVERBS_PABI_VERSION@ {
 		ibv_cmd_create_srq_ex;
 		ibv_cmd_create_wq;
 		ibv_cmd_create_action_xfrm;
+		ibv_cmd_modify_action_xfrm;
 		ibv_cmd_dealloc_mw;
 		ibv_cmd_dealloc_pd;
 		ibv_cmd_dereg_mr;

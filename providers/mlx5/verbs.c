@@ -2325,3 +2325,25 @@ struct _ibv_action_xfrm *mlx5_create_action_xfrm(struct ibv_context *ctx,
 
 	return action;
 }
+
+int mlx5_modify_action_xfrm(struct _ibv_action_xfrm *action,
+			    const struct ibv_action_xfrm_attr *attr)
+{
+	void *cmd;
+	void *resp;
+	size_t cmd_sz;
+	size_t resp_sz;
+	int ret = verbs_get_action_xfrm_size(attr, &cmd_sz, &resp_sz);
+
+	if (ret)
+		return ret;
+
+	cmd_sz += sizeof(struct ibv_modify_action_xfrm);
+	resp_sz += sizeof(struct ibv_modify_action_xfrm_resp);
+
+	cmd = alloca(cmd_sz);
+	resp = alloca(resp_sz);
+
+	return ibv_cmd_modify_action_xfrm(action, attr, cmd, cmd_sz,
+					  cmd_sz, resp, resp_sz, resp_sz);
+}

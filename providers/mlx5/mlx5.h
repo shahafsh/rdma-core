@@ -695,6 +695,8 @@ struct ibv_srq *mlx5_create_srq_ex(struct ibv_context *context,
 				   struct ibv_srq_init_attr_ex *attr);
 struct _ibv_action_xfrm *mlx5_create_action_xfrm(struct ibv_context *ctx,
 						 const struct ibv_action_xfrm_attr *attr);
+int mlx5_modify_action_xfrm(struct _ibv_action_xfrm *action,
+			    const struct ibv_action_xfrm_attr *attr);
 
 static inline void *mlx5_find_uidx(struct mlx5_context *ctx, uint32_t uidx)
 {

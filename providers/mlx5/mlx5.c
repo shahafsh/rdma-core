@@ -941,6 +941,8 @@ static int mlx5_init_context(struct verbs_device *vdev,
 		mlx5_map_internal_clock(mdev, ctx);
 	}
 
+	context->ctx_flags = resp.flags;
+
 	context->prefer_bf = get_always_bf();
 	context->shut_up_bf = get_shut_up_bf();
 	mlx5_read_env(&vdev->device, context);

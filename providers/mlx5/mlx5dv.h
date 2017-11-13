@@ -58,12 +58,20 @@ enum {
 
 enum mlx5dv_context_comp_mask {
 	MLX5DV_CONTEXT_MASK_CQE_COMPRESION	= 1 << 0,
-	MLX5DV_CONTEXT_MASK_RESERVED		= 1 << 1,
+	MLX5DV_CONTEXT_MASK_XFRM_FLAGS		= 1 << 1,
+	MLX5DV_CONTEXT_MASK_RESERVED		= 1 << 2,
 };
 
 struct mlx5dv_cqe_comp_caps {
 	uint32_t max_num;
 	uint32_t supported_format; /* enum mlx5dv_cqe_comp_res_format */
+};
+
+enum {
+	MLX5DV_CONTEXT_XFRM_FLAGS_ESP_AES_GCM_REQ_METADATA = 1U << 0,
+	MLX5DV_CONTEXT_XFRM_FLAGS_ESP_AES_GCM_RX = 1U << 1,
+	MLX5DV_CONTEXT_XFRM_FLAGS_ESP_AES_GCM_TX = 1U << 2,
+	MLX5DV_CONTEXT_XFRM_FLAGS_ESP_AES_GCM_SPI_RSS_ONLY = 1U << 3,
 };
 
 /*
@@ -74,6 +82,7 @@ struct mlx5dv_context {
 	uint64_t	flags;
 	uint64_t	comp_mask;
 	struct mlx5dv_cqe_comp_caps	cqe_comp_caps;
+	uint32_t	xfrm_flags;
 };
 
 enum mlx5dv_context_flags {
